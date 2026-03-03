@@ -1,6 +1,14 @@
 # webext-reactive-store
 
+[![npm version](https://img.shields.io/npm/v/webext-reactive-store)](https://npmjs.com/package/webext-reactive-store)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![Chrome Web Extension](https://img.shields.io/badge/Chrome-Web%20Extension-orange.svg)](https://developer.chrome.com/docs/extensions/)
+[![Discord](https://img.shields.io/badge/Discord-Zovo-blueviolet.svg?logo=discord)](https://discord.gg/zovo)
+
 A reactive state management library for Chrome extensions using the observer pattern with chrome.storage sync.
+
+Part of the [Zovo](https://zovo.one) family of Chrome extension utilities.
 
 ## Features
 
@@ -183,6 +191,21 @@ store.setState('theme', 'light');
 - Edge 88+
 - Chromium-based browsers
 
+## Contributing
+
+Contributions are welcome! Please read our [contributing guidelines](CONTRIBUTING.md) before submitting PRs.
+
+## See Also
+
+### Related Zovo Repositories
+
+- [zovo-extension-template](https://github.com/theluckystrike/zovo-extension-template) - Boilerplate for building privacy-first Chrome extensions
+- [zovo-types-webext](https://github.com/theluckystrike/zovo-types-webext) - Comprehensive TypeScript type definitions
+- [webext-bridge](https://github.com/theluckystrike/webext-bridge) - Cross-context messaging
+- [webext-storage-sync](https://github.com/theluckystrike/webext-storage-sync) - Cross-device storage sync
+
+Visit [zovo.one](https://zovo.one) for more information.
+
 ## License
 
-MIT
+MIT - [Zovo](https://zovo.one)
