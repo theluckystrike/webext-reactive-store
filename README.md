@@ -1,15 +1,29 @@
 # webext-reactive-store
 
-A reactive state management library for Chrome extensions using the observer pattern with chrome.storage sync.
+[![npm version](https://img.shields.io/npm/v/webext-reactive-store)](https://npmjs.com/package/webext-reactive-store)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![CI Status](https://img.shields.io/github/actions/workflow/status/theluckystrike/webext-reactive-store/ci.yml?branch=main)](https://github.com/theluckystrike/webext-reactive-store/actions)
+[![Discord](https://img.shields.io/badge/Discord-Zovo-blueviolet.svg?logo=discord)](https://discord.gg/zovo)
+[![Website](https://img.shields.io/badge/Website-zovo.one-blue)](https://zovo.one)
+[![GitHub Stars](https://img.shields.io/github/stars/theluckystrike/webext-reactive-store?style=social)](https://github.com/theluckystrike/webext-reactive-store)
+
+> A reactive state management library for Chrome extensions using the observer pattern with chrome.storage sync.
+
+## Overview
+
+**webext-reactive-store** is a reactive state management library for Chrome extensions. It uses the observer pattern with chrome.storage sync to automatically keep state synchronized across all extension contexts (popup, background, content scripts).
+
+Part of the [Zovo](https://zovo.one) developer tools family.
 
 ## Features
 
-- Reactive state updates with subscribers
-- Automatic sync across extension contexts
-- Immutable state updates
-- TypeScript support
-- Middleware support
-- Persistence with chrome.storage
+- ✅ **Reactive Updates** - Subscribe to state changes
+- ✅ **Automatic Sync** - Sync across extension contexts
+- ✅ **Immutable Updates** - Safe state mutations
+- ✅ **TypeScript** - Full type support
+- ✅ **Middleware** - Extend with custom logic
+- ✅ **Persistence** - Automatic chrome.storage sync
 
 ## Installation
 
@@ -183,6 +197,44 @@ store.setState('theme', 'light');
 - Edge 88+
 - Chromium-based browsers
 
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. **Fork** the repository
+2. **Create** a feature branch: `git checkout -b feature/store-improvement`
+3. **Make** your changes
+4. **Test** your changes: `npm test`
+5. **Commit** your changes: `git commit -m 'Add new feature'`
+6. **Push** to the branch: `git push origin feature/store-improvement`
+7. **Submit** a Pull Request
+
+## Built by Zovo
+
+Part of the [Zovo](https://zovo.one) developer tools family — privacy-first Chrome extensions built by developers, for developers.
+
+## See Also
+
+### Related Zovo Repositories
+
+- [webext-bridge](https://github.com/theluckystrike/webext-bridge) - Cross-context messaging
+- [webext-options-page](https://github.com/theluckystrike/webext-options-page) - Pre-built options page
+- [chrome-storage-plus](https://github.com/theluckystrike/chrome-storage-plus) - Type-safe storage wrapper
+- [chrome-extension-starter-mv3](https://github.com/theluckystrike/chrome-extension-starter-mv3) - Extension template
+- [zovo-extension-template](https://github.com/theluckystrike/zovo-extension-template) - Privacy-first extension template
+
+### Zovo Chrome Extensions
+
+- [Zovo Tab Manager](https://chrome.google.com/webstore/detail/zovo-tab-manager) - Manage tabs efficiently
+- [Zovo Focus](https://chrome.google.com/webstore/detail/zovo-focus) - Block distractions
+- [Zovo Permissions Scanner](https://chrome.google.com/webstore/detail/zovo-permissions-scanner) - Check extension privacy grades
+
+Visit [zovo.one](https://zovo.one) for more information.
+
 ## License
 
-MIT
+MIT — [Zovo](https://zovo.one)
+
+---
+
+*Built by developers, for developers. No compromises on privacy.*
