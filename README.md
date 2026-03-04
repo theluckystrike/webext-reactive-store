@@ -1,218 +1,122 @@
 # webext-reactive-store
 
-[![npm version](https://img.shields.io/npm/v/webext-reactive-store)](https://npmjs.com/package/webext-reactive-store)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![Chrome Web Extension](https://img.shields.io/badge/Chrome-Web%20Extension-orange.svg)](https://developer.chrome.com/docs/extensions/)
-[![CI Status](https://github.com/theluckystrike/webext-reactive-store/actions/workflows/ci.yml/badge.svg)](https://github.com/theluckystrike/webext-reactive-store/actions)
-[![Discord](https://img.shields.io/badge/Discord-Zovo-blueviolet.svg?logo=discord)](https://discord.gg/zovo)
-[![Website](https://img.shields.io/badge/Website-zovo.one-blue)](https://zovo.one)
-[![GitHub Stars](https://img.shields.io/github/stars/theluckystrike/webext-reactive-store?style=social)](https://github.com/theluckystrike/webext-reactive-store)
+> Reactive state store for Chrome extensions -- subscriptions, cross-context sync, computed properties, and middleware for MV3.
 
-A reactive state management library for Chrome extensions using the observer pattern with chrome.storage sync.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-Part of the [Zovo](https://zovo.one) family of Chrome extension utilities.
-
-## Features
-
-- Reactive state updates with subscribers
-- Automatic sync across extension contexts
-- Immutable state updates
-- TypeScript support
-- Middleware support
-- Persistence with chrome.storage
-
-## Installation
+## Install
 
 ```bash
 npm install webext-reactive-store
 ```
 
-## Quick Start
+## Usage
 
-### Create a Store
+```ts
+import { ReactiveStore } from 'webext-reactive-store';
 
-```javascript
-import { createStore } from 'webext-reactive-store';
-
-const store = createStore({
-  initialState: {
-    user: null,
-    settings: {
-      theme: 'dark',
-      notifications: true
-    },
-    items: []
-  }
-});
-```
-
-### Subscribe to Changes
-
-```javascript
-// Subscribe to entire state
-store.subscribe((state) => {
-  console.log('State changed:', state);
+// Create a store with initial state
+const store = new ReactiveStore({
+  count: 0,
+  theme: 'light',
+  user: null as string | null,
 });
 
-// Subscribe to specific slice
-store.subscribe('user', (user) => {
-  console.log('User changed:', user);
+// Subscribe to a specific key
+const unsubscribe = store.subscribe('count', (value, prev) => {
+  console.log(`count changed: ${prev} -> ${value}`);
 });
 
-store.subscribe('settings.theme', (theme) => {
-  console.log('Theme changed to:', theme);
-});
-```
-
-### Update State
-
-```javascript
-// Update entire state
-store.setState({ user: { name: 'John' } });
-
-// Update with updater function
-store.setState((state) => ({
-  ...state,
-  user: { ...state.user, name: 'Jane' }
-}));
-
-// Nested updates
-store.setState('settings.theme', 'light');
-
-store.setState('items', (items) => [...items, newItem]);
-```
-
-### Use in Background
-
-```javascript
-// background.js
-import { createStore } from 'webext-reactive-store';
-
-const store = createStore({ initialState: { count: 0 } });
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'INCREMENT') {
-    store.setState('count', (c) => c + 1);
-  }
-});
-```
-
-### Use in Content Script
-
-```javascript
-// content-script.js
-import { createStore } from 'webext-reactive-store';
-
-const store = createStore({ 
-  initialState: { count: 0 },
-  storage: 'sync' // or 'local'
+// Subscribe to all changes
+store.onAny((state, change) => {
+  console.log(`${change.key} updated to`, change.value);
 });
 
-// React to background changes
-store.subscribe('count', (count) => {
-  document.getElementById('counter').textContent = count;
+// Update state
+store.set('count', 1);
+store.update({ theme: 'dark', user: 'Alice' });
+
+// Read state
+console.log(store.get('theme'));      // "dark"
+console.log(store.getState());        // { count: 1, theme: "dark", user: "Alice" }
+
+// Add middleware (e.g. logging, validation)
+store.use((key, value, prev) => {
+  console.log(`[middleware] ${key}: ${prev} -> ${value}`);
+  return value; // return modified value or undefined to keep original
 });
+
+// Define computed properties
+store.defineComputed('isLoggedIn', (state) => state.user !== null);
+console.log(store.getComputed('isLoggedIn')); // true
+
+// Enable cross-context sync via chrome.runtime messaging
+store.enableSync('my-store-channel');
+
+// Persist to chrome.storage.local
+await store.save('my-store-key');
+await store.load('my-store-key');
+
+// Unsubscribe when done
+unsubscribe();
 ```
 
 ## API
 
-### createStore(options)
+### `class ReactiveStore<T extends Record<string, any>>`
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| initialState | object | {} | Initial state object |
-| storage | string | 'local' | Storage area ('local' or 'sync') |
-| middleware | array | [] | Middleware functions |
+#### `constructor(initial: T)`
 
-### store Methods
+Create a new store with the given initial state object.
 
-| Method | Description |
-|--------|-------------|
-| `getState()` | Get current state |
-| `setState(updater)` | Update state |
-| `subscribe(listener)` | Subscribe to all changes |
-| `subscribe(path, listener)` | Subscribe to path changes |
-| `unsubscribe(listener)` | Unsubscribe from changes |
-| `reset()` | Reset to initial state |
+#### `getState(): Readonly<T>`
 
-### Middleware
+Return a shallow copy of the full state object.
 
-```javascript
-const loggerMiddleware = (store) => (next) => (action) => {
-  console.log('Before:', store.getState());
-  next(action);
-  console.log('After:', store.getState());
-};
+#### `get<K extends keyof T>(key: K): T[K]`
 
-const store = createStore({
-  initialState: { ... },
-  middleware: [loggerMiddleware]
-});
-```
+Get the value of a single state key.
 
-## TypeScript
+#### `set<K extends keyof T>(key: K, value: T[K]): void`
 
-```typescript
-interface AppState {
-  user: User | null;
-  settings: Settings;
-  items: Item[];
-}
+Set a single state key. Runs middleware, then notifies key-specific and wildcard (`*`) subscribers.
 
-const store = createStore<AppState>({
-  initialState: {
-    user: null,
-    settings: { theme: 'dark' },
-    items: []
-  }
-});
+#### `update(partial: Partial<T>): void`
 
-// Fully typed subscriptions
-store.subscribe('user', (user) => {
-  // user is typed as User | null
-});
-```
+Update multiple keys at once. Calls `set()` for each key, triggering middleware and subscriptions individually.
 
-## Chrome Storage Sync
+#### `subscribe<K extends keyof T>(key: K, callback: (value: T[K], prev: T[K]) => void): () => void`
 
-For syncing across devices:
+Subscribe to changes on a specific key. Returns an unsubscribe function.
 
-```javascript
-const store = createStore({
-  initialState: { theme: 'dark' },
-  storage: 'sync' // Uses chrome.storage.sync
-});
+#### `onAny(callback: (state: T, change: { key: string; value: any; prev: any }) => void): () => void`
 
-// Changes automatically sync across devices
-store.setState('theme', 'light');
-```
+Subscribe to all state changes. The callback receives the full state and a change descriptor. Returns an unsubscribe function.
 
-## Browser Support
+#### `use(middleware: (key: string, value: any, prev: any) => any): this`
 
-- Chrome 88+
-- Edge 88+
-- Chromium-based browsers
+Add a middleware function that runs before every state update. The middleware receives the key, new value, and previous value. Return a value to transform the update, or `undefined` to keep the original. Returns `this` for chaining.
 
-## Contributing
+#### `defineComputed(name: string, fn: (state: T) => any): this`
 
-Contributions are welcome! Please read our [contributing guidelines](CONTRIBUTING.md) before submitting PRs.
+Define a computed property that derives a value from the current state. Returns `this` for chaining.
 
-## See Also
+#### `getComputed(name: string): any`
 
-### Related Zovo Repositories
+Evaluate and return a computed property by name. Returns `undefined` if the computed property has not been defined.
 
-- [zovo-extension-template](https://github.com/theluckystrike/zovo-extension-template) - Boilerplate for building privacy-first Chrome extensions
-- [zovo-types-webext](https://github.com/theluckystrike/zovo-types-webext) - Comprehensive TypeScript type definitions
-- [webext-bridge](https://github.com/theluckystrike/webext-bridge) - Cross-context messaging
-- [webext-storage-sync](https://github.com/theluckystrike/webext-storage-sync) - Cross-device storage sync
+#### `enableSync(channel?: string): this`
 
-Visit [zovo.one](https://zovo.one) for more information.
+Enable cross-context state synchronization via `chrome.runtime` messaging. All `set()` calls will broadcast changes to other contexts (background, popup, content scripts) listening on the same `channel` (default: `"__store_sync__"`). Returns `this` for chaining.
+
+#### `save(key?: string): Promise<void>`
+
+Persist the current state to `chrome.storage.local` under the given key (default: `"__reactive_store__"`).
+
+#### `load(key?: string): Promise<void>`
+
+Load state from `chrome.storage.local` and merge it into the current state. Uses the given key (default: `"__reactive_store__"`).
 
 ## License
 
-MIT - [Zovo](https://zovo.one)
-
----
-
-*Built by developers, for developers. No compromises on privacy.*
+MIT
