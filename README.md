@@ -1,8 +1,12 @@
 # webext-reactive-store
 
-> Reactive state store for Chrome extensions -- subscriptions, cross-context sync, computed properties, and middleware for MV3.
-
+[![npm version](https://img.shields.io/npm/v/webext-reactive-store)](https://npmjs.com/package/webext-reactive-store)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![Discord](https://img.shields.io/badge/Discord-Zovo-blueviolet.svg?logo=discord)](https://discord.gg/zovo)
+[![Website](https://img.shields.io/badge/Website-zovo.one-blue)](https://zovo.one)
+
+> Reactive state store for Chrome extensions -- subscriptions, cross-context sync, computed properties, and middleware for MV3.
 
 ## Install
 
@@ -120,3 +124,18 @@ Load state from `chrome.storage.local` and merge it into the current state. Uses
 ## License
 
 MIT
+
+## See Also
+
+### Related Zovo Repositories
+
+- [chrome-storage-plus](https://github.com/theluckystrike/chrome-storage-plus) - Type-safe storage wrapper with schema validation
+- [chrome-extension-starter-mv3](https://github.com/theluckystrike/chrome-extension-starter-mv3) - Production-ready Chrome extension starter
+- [awesome-chrome-extensions-dev](https://github.com/theluckystrike/awesome-chrome-extensions-dev) - Curated list of Chrome extension development resources
+
+### Zovo Chrome Extensions
+
+- [Zovo Tab Manager](https://chrome.google.com/webstore/detail/zovo-tab-manager) - Manage tabs efficiently
+- [Zovo Focus](https://chrome.google.com/webstore/detail/zovo-focus) - Block distractions
+
+Visit [zovo.one](https://zovo.one) for more information.
