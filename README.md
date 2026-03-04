@@ -9,6 +9,8 @@
 
 > Reactive state store for Chrome extensions -- subscriptions, cross-context sync, computed properties, and middleware for MV3.
 
+Part of the [Zovo](https://zovo.one) developer tools family.
+
 ## Install
 
 ```bash
