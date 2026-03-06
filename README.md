@@ -1,156 +1,135 @@
 # webext-reactive-store
 
-[![npm version](https://img.shields.io/npm/v/webext-reactive-store)](https://npmjs.com/package/webext-reactive-store)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![Discord](https://img.shields.io/badge/Discord-Zovo-blueviolet.svg?logo=discord)](https://discord.gg/zovo)
-[![Website](https://img.shields.io/badge/Website-zovo.one-blue)](https://zovo.one)
-[![GitHub Stars](https://img.shields.io/github/stars/theluckystrike/webext-reactive-store?style=social)](https://github.com/theluckystrike/webext-reactive-store)
+Reactive state store for Chrome extensions. Subscriptions, cross-context sync, computed properties, and middleware, all built for Manifest V3.
 
-> Reactive state store for Chrome extensions -- subscriptions, cross-context sync, computed properties, and middleware for MV3.
-
-Part of the [Zovo](https://zovo.one) developer tools family.
-
-## Install
+INSTALL
 
 ```bash
 npm install webext-reactive-store
 ```
 
-## Usage
+QUICK START
 
 ```ts
 import { ReactiveStore } from 'webext-reactive-store';
 
-// Create a store with initial state
 const store = new ReactiveStore({
   count: 0,
   theme: 'light',
   user: null as string | null,
 });
 
-// Subscribe to a specific key
-const unsubscribe = store.subscribe('count', (value, prev) => {
-  console.log(`count changed: ${prev} -> ${value}`);
+// subscribe to a specific key
+const unsub = store.subscribe('count', (value, prev) => {
+  console.log(`count changed from ${prev} to ${value}`);
 });
 
-// Subscribe to all changes
-store.onAny((state, change) => {
-  console.log(`${change.key} updated to`, change.value);
-});
-
-// Update state
+// update state
 store.set('count', 1);
 store.update({ theme: 'dark', user: 'Alice' });
 
-// Read state
-console.log(store.get('theme'));      // "dark"
-console.log(store.getState());        // { count: 1, theme: "dark", user: "Alice" }
+// read state
+store.get('theme');    // "dark"
+store.getState();      // { count: 1, theme: "dark", user: "Alice" }
 
-// Add middleware (e.g. logging, validation)
-store.use((key, value, prev) => {
-  console.log(`[middleware] ${key}: ${prev} -> ${value}`);
-  return value; // return modified value or undefined to keep original
-});
-
-// Define computed properties
-store.defineComputed('isLoggedIn', (state) => state.user !== null);
-console.log(store.getComputed('isLoggedIn')); // true
-
-// Enable cross-context sync via chrome.runtime messaging
-store.enableSync('my-store-channel');
-
-// Persist to chrome.storage.local
-await store.save('my-store-key');
-await store.load('my-store-key');
-
-// Unsubscribe when done
-unsubscribe();
+unsub();
 ```
 
-## API
+LISTENING TO ALL CHANGES
 
-### `class ReactiveStore<T extends Record<string, any>>`
+```ts
+store.onAny((state, change) => {
+  console.log(`${change.key} updated to`, change.value);
+});
+```
 
-#### `constructor(initial: T)`
+onAny fires on every key update. The callback receives the full state snapshot and a change object with key, value, and prev fields.
 
-Create a new store with the given initial state object.
+MIDDLEWARE
 
-#### `getState(): Readonly<T>`
+```ts
+store.use((key, value, prev) => {
+  console.log(`[mw] ${key}: ${prev} -> ${value}`);
+  return value;
+});
+```
 
-Return a shallow copy of the full state object.
+Middleware runs before each state update. Return a value to transform the update. Return undefined to keep the original value. Multiple middleware functions run in order and can be chained with store.use().use().
 
-#### `get<K extends keyof T>(key: K): T[K]`
+COMPUTED PROPERTIES
 
-Get the value of a single state key.
+```ts
+store.defineComputed('isLoggedIn', (state) => state.user !== null);
 
-#### `set<K extends keyof T>(key: K, value: T[K]): void`
+store.getComputed('isLoggedIn'); // true
+```
 
-Set a single state key. Runs middleware, then notifies key-specific and wildcard (`*`) subscribers.
+Computed properties are evaluated on read against the current state. Returns undefined if the named computed has not been defined.
 
-#### `update(partial: Partial<T>): void`
+CROSS-CONTEXT SYNC
 
-Update multiple keys at once. Calls `set()` for each key, triggering middleware and subscriptions individually.
+```ts
+store.enableSync('my-channel');
+```
 
-#### `subscribe<K extends keyof T>(key: K, callback: (value: T[K], prev: T[K]) => void): () => void`
+Enables state synchronization between background, popup, and content script contexts using chrome.runtime messaging. Every set() call broadcasts the change to all other contexts listening on the same channel. The default channel is "__store_sync__".
 
-Subscribe to changes on a specific key. Returns an unsubscribe function.
+PERSISTENCE
 
-#### `onAny(callback: (state: T, change: { key: string; value: any; prev: any }) => void): () => void`
+```ts
+await store.save('my-key');
+await store.load('my-key');
+```
 
-Subscribe to all state changes. The callback receives the full state and a change descriptor. Returns an unsubscribe function.
+save() writes the full state to chrome.storage.local under the given key. load() reads it back and merges into the current state. Both default to "__reactive_store__" when no key is provided.
 
-#### `use(middleware: (key: string, value: any, prev: any) => any): this`
+API REFERENCE
 
-Add a middleware function that runs before every state update. The middleware receives the key, new value, and previous value. Return a value to transform the update, or `undefined` to keep the original. Returns `this` for chaining.
+ReactiveStore<T extends Record<string, any>>
 
-#### `defineComputed(name: string, fn: (state: T) => any): this`
+constructor(initial: T)
+  Creates a new store seeded with the initial state object.
 
-Define a computed property that derives a value from the current state. Returns `this` for chaining.
+getState(): Readonly<T>
+  Returns a shallow copy of the full state.
 
-#### `getComputed(name: string): any`
+get<K extends keyof T>(key: K): T[K]
+  Returns the value for a single key.
 
-Evaluate and return a computed property by name. Returns `undefined` if the computed property has not been defined.
+set<K extends keyof T>(key: K, value: T[K]): void
+  Sets a single key. Runs all middleware, then notifies key-specific subscribers and wildcard subscribers.
 
-#### `enableSync(channel?: string): this`
+update(partial: Partial<T>): void
+  Sets multiple keys. Calls set() internally for each entry.
 
-Enable cross-context state synchronization via `chrome.runtime` messaging. All `set()` calls will broadcast changes to other contexts (background, popup, content scripts) listening on the same `channel` (default: `"__store_sync__"`). Returns `this` for chaining.
+subscribe<K extends keyof T>(key: K, cb: (value: T[K], prev: T[K]) => void): () => void
+  Subscribes to changes on one key. Returns an unsubscribe function.
 
-#### `save(key?: string): Promise<void>`
+onAny(cb: (state: T, change: { key: string; value: any; prev: any }) => void): () => void
+  Subscribes to all state changes. Returns an unsubscribe function.
 
-Persist the current state to `chrome.storage.local` under the given key (default: `"__reactive_store__"`).
+use(mw: (key: string, value: any, prev: any) => any): this
+  Registers middleware. Returns this for chaining.
 
-#### `load(key?: string): Promise<void>`
+defineComputed(name: string, fn: (state: T) => any): this
+  Defines a computed property. Returns this for chaining.
 
-Load state from `chrome.storage.local` and merge it into the current state. Uses the given key (default: `"__reactive_store__"`).
+getComputed(name: string): any
+  Evaluates and returns a computed property. Returns undefined if not defined.
 
-## License
+enableSync(channel?: string): this
+  Turns on cross-context sync via chrome.runtime messaging. Default channel is "__store_sync__". Returns this for chaining.
 
-MIT
+save(key?: string): Promise<void>
+  Persists state to chrome.storage.local. Default key is "__reactive_store__".
 
-## Contributing
+load(key?: string): Promise<void>
+  Loads and merges state from chrome.storage.local. Default key is "__reactive_store__".
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+LICENSE
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+MIT. See LICENSE file.
 
 ---
 
-Built by [Zovo](https://zovo.one)
-
-### Related Zovo Repositories
-
-- [chrome-storage-plus](https://github.com/theluckystrike/chrome-storage-plus) - Type-safe storage wrapper with schema validation
-- [chrome-extension-starter-mv3](https://github.com/theluckystrike/chrome-extension-starter-mv3) - Production-ready Chrome extension starter
-- [awesome-chrome-extensions-dev](https://github.com/theluckystrike/awesome-chrome-extensions-dev) - Curated list of Chrome extension development resources
-
-### Zovo Chrome Extensions
-
-- [Zovo Tab Manager](https://chrome.google.com/webstore/detail/zovo-tab-manager) - Manage tabs efficiently
-- [Zovo Focus](https://chrome.google.com/webstore/detail/zovo-focus) - Block distractions
-
-Visit [zovo.one](https://zovo.one) for more information.
+Built at zovo.one, a Chrome extension studio by theluckystrike.
