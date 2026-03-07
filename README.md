@@ -1,3 +1,8 @@
+[![CI](https://github.com/theluckystrike/webext-reactive-store/actions/workflows/ci.yml/badge.svg)](https://github.com/theluckystrike/webext-reactive-store/actions)
+[![npm](https://img.shields.io/npm/v/webext-reactive-store)](https://www.npmjs.com/package/webext-reactive-store)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+
 # webext-reactive-store
 
 Reactive state store for Chrome extensions. Subscriptions, cross-context sync, computed properties, and middleware, all built for Manifest V3.
@@ -133,3 +138,11 @@ MIT. See LICENSE file.
 ---
 
 Built at zovo.one, a Chrome extension studio by theluckystrike.
+
+## License
+
+MIT
+
+---
+
+Built by [theluckystrike](https://github.com/theluckystrike) — [zovo.one](https://zovo.one)
