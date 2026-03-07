@@ -1,5 +1,5 @@
 [![CI](https://github.com/theluckystrike/webext-reactive-store/actions/workflows/ci.yml/badge.svg)](https://github.com/theluckystrike/webext-reactive-store/actions)
-[![npm](https://img.shields.io/npm/v/webext-reactive-store)](https://www.npmjs.com/package/webext-reactive-store)
+[![npm](https://img.shields.io/npm/v/@theluckystrike/webext-reactive-store)](https://www.npmjs.com/package/@theluckystrike/webext-reactive-store)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 
@@ -10,13 +10,13 @@ Reactive state store for Chrome extensions. Subscriptions, cross-context sync, c
 INSTALL
 
 ```bash
-npm install webext-reactive-store
+npm install @theluckystrike/webext-reactive-store
 ```
 
 QUICK START
 
 ```ts
-import { ReactiveStore } from 'webext-reactive-store';
+import { ReactiveStore } from '@theluckystrike/webext-reactive-store';
 
 const store = new ReactiveStore({
   count: 0,
