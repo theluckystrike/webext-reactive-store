@@ -14,7 +14,7 @@ const chromeMock = {
     },
   },
 };
-(global as any).chrome = chromeMock;
+(globalThis as any).chrome = chromeMock;
 
 describe('ReactiveStore', () => {
   interface State { count: number; theme: string; }
