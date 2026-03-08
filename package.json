@@ -1,40 +1,41 @@
 {
-    "name": "webext-reactive-store",
-    "version": "0.1.0",
-    "description": "Reactive state store for Chrome extensions — subscriptions, cross-context sync, computed properties, and middleware for MV3.",
-    "author": "Zovo <hello@zovo.one>",
-    "license": "MIT",
-    "keywords": [
-        "chrome-extension",
-        "reactive",
-        "store",
-        "state",
-        "sync",
-        "computed",
-        "middleware",
-        "manifest-v3",
-        "browser-extension",
-        "observable"
-    ],
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/theluckystrike/webext-reactive-store.git"
-    },
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "files": [
-        "dist",
-        "README.md",
-        "LICENSE"
-    ],
-    "scripts": {
-        "build": "tsc",
-        "prepublishOnly": "npm run build",
-        "test": "vitest run"
-    },
-    "devDependencies": {
-        "@types/chrome": "^0.0.260",
-        "typescript": "^5.3.3",
-        "vitest": "^4.0.18"
-    }
+  "name": "webext-reactive-store",
+  "version": "0.1.0",
+  "description": "Reactive state store for Chrome extensions -- subscriptions, cross-context sync, computed properties, and middleware for MV3.",
+  "author": "Zovo <hello@zovo.one>",
+  "license": "MIT",
+  "keywords": [
+    "chrome-extension",
+    "reactive",
+    "store",
+    "state-management",
+    "sync",
+    "computed",
+    "middleware",
+    "manifest-v3",
+    "browser-extension",
+    "observable",
+    "subscription"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/theluckystrike/webext-reactive-store.git"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.260",
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.18"
+  }
 }

@@ -1,148 +1,104 @@
-[![CI](https://github.com/theluckystrike/webext-reactive-store/actions/workflows/ci.yml/badge.svg)](https://github.com/theluckystrike/webext-reactive-store/actions)
-[![npm](https://img.shields.io/npm/v/@theluckystrike/webext-reactive-store)](https://www.npmjs.com/package/@theluckystrike/webext-reactive-store)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+<div align="center">
 
 # webext-reactive-store
 
-Reactive state store for Chrome extensions. Subscriptions, cross-context sync, computed properties, and middleware, all built for Manifest V3.
+Reactive state store for Chrome extensions. Subscriptions, cross-context sync, computed properties, and middleware for MV3.
 
-INSTALL
+[![npm version](https://img.shields.io/npm/v/webext-reactive-store)](https://www.npmjs.com/package/webext-reactive-store)
+[![npm downloads](https://img.shields.io/npm/dm/webext-reactive-store)](https://www.npmjs.com/package/webext-reactive-store)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
+![npm bundle size](https://img.shields.io/bundlephobia/minzip/webext-reactive-store)
+
+[Installation](#installation) · [Quick Start](#quick-start) · [API](#api) · [License](#license)
+
+</div>
+
+---
+
+## Features
+
+- **Reactive** -- subscribe to state changes with fine-grained selectors
+- **Cross-context sync** -- state syncs across background, popup, and content scripts
+- **Computed properties** -- derived state that updates automatically
+- **Middleware** -- logging, persistence, validation, and custom transforms
+- **Immutable updates** -- safe state mutations without side effects
+- **TypeScript** -- fully typed state, actions, and selectors
+
+## Installation
 
 ```bash
-npm install @theluckystrike/webext-reactive-store
+npm install webext-reactive-store
 ```
 
-QUICK START
+<details>
+<summary>Other package managers</summary>
 
-```ts
-import { ReactiveStore } from '@theluckystrike/webext-reactive-store';
+```bash
+pnpm add webext-reactive-store
+# or
+yarn add webext-reactive-store
+```
 
-const store = new ReactiveStore({
+</details>
+
+## Quick Start
+
+```typescript
+import { createStore } from "webext-reactive-store";
+
+const store = createStore({
   count: 0,
-  theme: 'light',
   user: null as string | null,
 });
 
-// subscribe to a specific key
-const unsub = store.subscribe('count', (value, prev) => {
-  console.log(`count changed from ${prev} to ${value}`);
-});
-
-// update state
-store.set('count', 1);
-store.update({ theme: 'dark', user: 'Alice' });
-
-// read state
-store.get('theme');    // "dark"
-store.getState();      // { count: 1, theme: "dark", user: "Alice" }
-
-unsub();
+store.subscribe("count", (value) => console.log("Count:", value));
+store.set("count", store.get("count") + 1);
 ```
 
-LISTENING TO ALL CHANGES
+## API
 
-```ts
-store.onAny((state, change) => {
-  console.log(`${change.key} updated to`, change.value);
-});
-```
+| Method | Description |
+|--------|-------------|
+| `createStore(initial)` | Create a reactive store with initial state |
+| `get(key)` | Read a value |
+| `set(key, value)` | Update a value (notifies subscribers) |
+| `subscribe(key, callback)` | Subscribe to changes on a key |
+| `computed(deps, fn)` | Create a computed property |
+| `use(middleware)` | Add middleware to the store pipeline |
 
-onAny fires on every key update. The callback receives the full state snapshot and a change object with key, value, and prev fields.
 
-MIDDLEWARE
 
-```ts
-store.use((key, value, prev) => {
-  console.log(`[mw] ${key}: ${prev} -> ${value}`);
-  return value;
-});
-```
+## Part of @zovo/webext
 
-Middleware runs before each state update. Return a value to transform the update. Return undefined to keep the original value. Multiple middleware functions run in order and can be chained with store.use().use().
+This package is part of the [@zovo/webext](https://github.com/theluckystrike) family -- typed, modular utilities for Chrome extension development:
 
-COMPUTED PROPERTIES
+| Package | Description |
+|---------|-------------|
+| [webext-storage](https://github.com/theluckystrike/webext-storage) | Typed storage with schema validation |
+| [webext-messaging](https://github.com/theluckystrike/webext-messaging) | Type-safe message passing |
+| [webext-tabs](https://github.com/theluckystrike/webext-tabs) | Tab query helpers |
+| [webext-cookies](https://github.com/theluckystrike/webext-cookies) | Promise-based cookies API |
+| [webext-i18n](https://github.com/theluckystrike/webext-i18n) | Internationalization toolkit |
 
-```ts
-store.defineComputed('isLoggedIn', (state) => state.user !== null);
+## Contributing
 
-store.getComputed('isLoggedIn'); // true
-```
+Contributions are welcome! Please open an issue or submit a pull request.
 
-Computed properties are evaluated on read against the current state. Returns undefined if the named computed has not been defined.
-
-CROSS-CONTEXT SYNC
-
-```ts
-store.enableSync('my-channel');
-```
-
-Enables state synchronization between background, popup, and content script contexts using chrome.runtime messaging. Every set() call broadcasts the change to all other contexts listening on the same channel. The default channel is "__store_sync__".
-
-PERSISTENCE
-
-```ts
-await store.save('my-key');
-await store.load('my-key');
-```
-
-save() writes the full state to chrome.storage.local under the given key. load() reads it back and merges into the current state. Both default to "__reactive_store__" when no key is provided.
-
-API REFERENCE
-
-ReactiveStore<T extends Record<string, any>>
-
-constructor(initial: T)
-  Creates a new store seeded with the initial state object.
-
-getState(): Readonly<T>
-  Returns a shallow copy of the full state.
-
-get<K extends keyof T>(key: K): T[K]
-  Returns the value for a single key.
-
-set<K extends keyof T>(key: K, value: T[K]): void
-  Sets a single key. Runs all middleware, then notifies key-specific subscribers and wildcard subscribers.
-
-update(partial: Partial<T>): void
-  Sets multiple keys. Calls set() internally for each entry.
-
-subscribe<K extends keyof T>(key: K, cb: (value: T[K], prev: T[K]) => void): () => void
-  Subscribes to changes on one key. Returns an unsubscribe function.
-
-onAny(cb: (state: T, change: { key: string; value: any; prev: any }) => void): () => void
-  Subscribes to all state changes. Returns an unsubscribe function.
-
-use(mw: (key: string, value: any, prev: any) => any): this
-  Registers middleware. Returns this for chaining.
-
-defineComputed(name: string, fn: (state: T) => any): this
-  Defines a computed property. Returns this for chaining.
-
-getComputed(name: string): any
-  Evaluates and returns a computed property. Returns undefined if not defined.
-
-enableSync(channel?: string): this
-  Turns on cross-context sync via chrome.runtime messaging. Default channel is "__store_sync__". Returns this for chaining.
-
-save(key?: string): Promise<void>
-  Persists state to chrome.storage.local. Default key is "__reactive_store__".
-
-load(key?: string): Promise<void>
-  Loads and merges state from chrome.storage.local. Default key is "__reactive_store__".
-
-LICENSE
-
-MIT. See LICENSE file.
-
----
-
-Built at zovo.one, a Chrome extension studio by theluckystrike.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-MIT
+MIT License -- see [LICENSE](LICENSE) for details.
 
 ---
 
-Built by [theluckystrike](https://github.com/theluckystrike) — [zovo.one](https://zovo.one)
+<div align="center">
+
+Built by [theluckystrike](https://github.com/theluckystrike) · [zovo.one](https://zovo.one)
+
+</div>
