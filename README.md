@@ -1,148 +1,251 @@
-[![CI](https://github.com/theluckystrike/webext-reactive-store/actions/workflows/ci.yml/badge.svg)](https://github.com/theluckystrike/webext-reactive-store/actions)
-[![npm](https://img.shields.io/npm/v/@theluckystrike/webext-reactive-store)](https://www.npmjs.com/package/@theluckystrike/webext-reactive-store)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-
 # webext-reactive-store
 
-Reactive state store for Chrome extensions. Subscriptions, cross-context sync, computed properties, and middleware, all built for Manifest V3.
+[![npm version](https://img.shields.io/npm/v/@theluckystrike/webext-reactive-store?color=green)](https://www.npmjs.com/package/@theluckystrike/webext-reactive-store)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
+[![Last Commit](https://img.shields.io/github/last-commit/theluckystrike/webext-reactive-store)](https://github.com/theluckystrike/webext-reactive-store/commits/main)
 
-INSTALL
+A reactive state store for Chrome extensions — featuring subscriptions, cross-context sync, computed properties, and middleware, all built for Manifest V3.
+
+## Overview
+
+`webext-reactive-store` provides a simple yet powerful way to manage reactive state across your Chrome extension's different contexts (popup, background script, content scripts). It bridges the gap between isolated contexts with automatic synchronization and persistent storage.
+
+### Key Features
+
+- **Reactive State** — Subscribe to state changes with an intuitive observer pattern
+- **Cross-Context Sync** — Automatically sync state between popup, background, and content scripts
+- **Computed Properties** — Derive values from state that automatically update
+- **Middleware** — Transform or validate state updates with middleware functions
+- **Persistence** — Save and load state from `chrome.storage.local`
+- **TypeScript First** — Full type safety out of the box
+
+## Installation
 
 ```bash
 npm install @theluckystrike/webext-reactive-store
 ```
 
-QUICK START
+Or using yarn:
 
-```ts
+```bash
+yarn add @theluckystrike/webext-reactive-store
+```
+
+## Quick Start
+
+```typescript
 import { ReactiveStore } from '@theluckystrike/webext-reactive-store';
 
-const store = new ReactiveStore({
+interface AppState {
+  count: number;
+  theme: 'light' | 'dark';
+  user: string | null;
+}
+
+const store = new ReactiveStore<AppState>({
   count: 0,
   theme: 'light',
-  user: null as string | null,
+  user: null,
 });
 
-// subscribe to a specific key
-const unsub = store.subscribe('count', (value, prev) => {
-  console.log(`count changed from ${prev} to ${value}`);
+// Subscribe to a specific key
+const unsubscribe = store.subscribe('count', (value, prev) => {
+  console.log(`Count changed from ${prev} to ${value}`);
 });
 
-// update state
+// Update state
 store.set('count', 1);
 store.update({ theme: 'dark', user: 'Alice' });
 
-// read state
-store.get('theme');    // "dark"
-store.getState();      // { count: 1, theme: "dark", user: "Alice" }
+// Read state
+store.get('theme');     // "dark"
+store.getState();       // { count: 1, theme: "dark", user: "Alice" }
 
-unsub();
+unsubscribe();
 ```
 
-LISTENING TO ALL CHANGES
+## Cross-Context Usage
 
-```ts
-store.onAny((state, change) => {
-  console.log(`${change.key} updated to`, change.value);
+One of the most powerful features is synchronizing state across your extension's different contexts.
+
+### Background Script (Central Store)
+
+```typescript
+// background.ts
+import { ReactiveStore } from '@theluckystrike/webext-reactive-store';
+
+interface AppState {
+  isAuthenticated: boolean;
+  user: { id: string; name: string } | null;
+  settings: { notifications: boolean; theme: string };
+}
+
+const store = new ReactiveStore<AppState>({
+  isAuthenticated: false,
+  user: null,
+  settings: { notifications: true, theme: 'light' },
+});
+
+// Enable cross-context sync
+store.enableSync('my-extension-sync');
+
+// Load persisted state on startup
+store.load();
+
+// Save state when it changes
+store.onAny(() => store.save());
+```
+
+### Popup Script
+
+```typescript
+// popup.ts
+import { ReactiveStore } from '@theluckystrike/webext-reactive-store';
+
+interface AppState {
+  isAuthenticated: boolean;
+  user: { id: string; name: string } | null;
+  settings: { notifications: boolean; theme: string };
+}
+
+const store = new ReactiveStore<AppState>({
+  isAuthenticated: false,
+  user: null,
+  settings: { notifications: true, theme: 'light' },
+});
+
+// Connect to the same sync channel
+store.enableSync('my-extension-sync');
+
+// React to background changes
+store.subscribe('isAuthenticated', (value) => {
+  if (value) {
+    console.log('User logged in!');
+  }
+});
+
+// Load initial state
+store.load();
+
+// Update state (automatically syncs to background)
+store.set('settings', { ...store.get('settings'), theme: 'dark' });
+```
+
+### Content Script
+
+```typescript
+// content.ts
+import { ReactiveStore } from '@theluckystrike/webext-reactive-store';
+
+interface AppState {
+  theme: 'light' | 'dark';
+}
+
+const store = new ReactiveStore<AppState>({
+  theme: 'light',
+});
+
+// Listen for theme changes from popup/background
+store.enableSync('my-extension-sync');
+
+store.subscribe('theme', (theme) => {
+  document.documentElement.setAttribute('data-theme', theme);
 });
 ```
 
-onAny fires on every key update. The callback receives the full state snapshot and a change object with key, value, and prev fields.
+## API Reference
 
-MIDDLEWARE
+### Constructor
 
-```ts
+```typescript
+new ReactiveStore<T>(initial: T)
+```
+
+Creates a new store with the given initial state.
+
+### State Access
+
+| Method | Description |
+|--------|-------------|
+| `getState(): Readonly<T>` | Returns a shallow copy of the entire state |
+| `get<K extends keyof T>(key: K): T[K]` | Returns the value for a single key |
+
+### State Mutation
+
+| Method | Description |
+|--------|-------------|
+| `set<K extends keyof T>(key: K, value: T[K]): void` | Sets a single key. Runs middleware, then notifies subscribers |
+| `update(partial: Partial<T>): void` | Sets multiple keys atomically |
+
+### Subscriptions
+
+| Method | Description |
+|--------|-------------|
+| `subscribe<K extends keyof T>(key: K, callback: (value: T[K], prev: T[K]) => void): () => void` | Subscribe to changes on a specific key. Returns unsubscribe function |
+| `onAny(callback: (state: T, change: { key: string; value: any; prev: any }) => void): () => void` | Subscribe to all state changes. Returns unsubscribe function |
+
+### Middleware
+
+```typescript
 store.use((key, value, prev) => {
-  console.log(`[mw] ${key}: ${prev} -> ${value}`);
+  // Transform the value
+  if (key === 'count') {
+    return value * 2;
+  }
   return value;
 });
 ```
 
-Middleware runs before each state update. Return a value to transform the update. Return undefined to keep the original value. Multiple middleware functions run in order and can be chained with store.use().use().
+Middleware runs before each state update. Return a value to transform the update.
 
-COMPUTED PROPERTIES
+### Computed Properties
 
-```ts
+```typescript
 store.defineComputed('isLoggedIn', (state) => state.user !== null);
+store.defineComputed('themeClass', (state) => `theme-${state.theme}`);
 
-store.getComputed('isLoggedIn'); // true
+store.getComputed('isLoggedIn'); // boolean
 ```
 
-Computed properties are evaluated on read against the current state. Returns undefined if the named computed has not been defined.
+Computed properties are derived values that update automatically when their dependencies change.
 
-CROSS-CONTEXT SYNC
+### Persistence
 
-```ts
-store.enableSync('my-channel');
+```typescript
+// Save state to chrome.storage.local
+await store.save('my-store-key');
+
+// Load state from chrome.storage.local
+await store.load('my-store-key');
 ```
 
-Enables state synchronization between background, popup, and content script contexts using chrome.runtime messaging. Every set() call broadcasts the change to all other contexts listening on the same channel. The default channel is "__store_sync__".
+### Cross-Context Sync
 
-PERSISTENCE
-
-```ts
-await store.save('my-key');
-await store.load('my-key');
+```typescript
+store.enableSync('my-channel'); // Default channel: "__store_sync__"
 ```
 
-save() writes the full state to chrome.storage.local under the given key. load() reads it back and merges into the current state. Both default to "__reactive_store__" when no key is provided.
+Enables state synchronization between all extension contexts using `chrome.runtime` messaging.
 
-API REFERENCE
+## Project Structure
 
-ReactiveStore<T extends Record<string, any>>
-
-constructor(initial: T)
-  Creates a new store seeded with the initial state object.
-
-getState(): Readonly<T>
-  Returns a shallow copy of the full state.
-
-get<K extends keyof T>(key: K): T[K]
-  Returns the value for a single key.
-
-set<K extends keyof T>(key: K, value: T[K]): void
-  Sets a single key. Runs all middleware, then notifies key-specific subscribers and wildcard subscribers.
-
-update(partial: Partial<T>): void
-  Sets multiple keys. Calls set() internally for each entry.
-
-subscribe<K extends keyof T>(key: K, cb: (value: T[K], prev: T[K]) => void): () => void
-  Subscribes to changes on one key. Returns an unsubscribe function.
-
-onAny(cb: (state: T, change: { key: string; value: any; prev: any }) => void): () => void
-  Subscribes to all state changes. Returns an unsubscribe function.
-
-use(mw: (key: string, value: any, prev: any) => any): this
-  Registers middleware. Returns this for chaining.
-
-defineComputed(name: string, fn: (state: T) => any): this
-  Defines a computed property. Returns this for chaining.
-
-getComputed(name: string): any
-  Evaluates and returns a computed property. Returns undefined if not defined.
-
-enableSync(channel?: string): this
-  Turns on cross-context sync via chrome.runtime messaging. Default channel is "__store_sync__". Returns this for chaining.
-
-save(key?: string): Promise<void>
-  Persists state to chrome.storage.local. Default key is "__reactive_store__".
-
-load(key?: string): Promise<void>
-  Loads and merges state from chrome.storage.local. Default key is "__reactive_store__".
-
-LICENSE
-
-MIT. See LICENSE file.
-
----
-
-Built at zovo.one, a Chrome extension studio by theluckystrike.
+```
+webext-reactive-store/
+├── src/
+│   ├── index.ts          # Main exports
+│   ├── store.ts          # ReactiveStore implementation
+│   └── store.test.ts     # Unit tests
+├── package.json
+├── tsconfig.json
+├── LICENSE
+└── README.md
+```
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE) for details.
 
 ---
 
-Built by [theluckystrike](https://github.com/theluckystrike) — [zovo.one](https://zovo.one)
+Built at [zovo.one](https://zovo.one) by [theluckystrike](https://github.com/theluckystrike)
