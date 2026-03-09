@@ -1,240 +1,251 @@
 # webext-reactive-store
 
-[![npm version](https://img.shields.io/npm/v/webext-reactive-store)](https://npmjs.com/package/webext-reactive-store)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![CI Status](https://img.shields.io/github/actions/workflow/status/theluckystrike/webext-reactive-store/ci.yml?branch=main)](https://github.com/theluckystrike/webext-reactive-store/actions)
-[![Discord](https://img.shields.io/badge/Discord-Zovo-blueviolet.svg?logo=discord)](https://discord.gg/zovo)
-[![Website](https://img.shields.io/badge/Website-zovo.one-blue)](https://zovo.one)
-[![GitHub Stars](https://img.shields.io/github/stars/theluckystrike/webext-reactive-store?style=social)](https://github.com/theluckystrike/webext-reactive-store)
+[![npm version](https://img.shields.io/npm/v/@theluckystrike/webext-reactive-store?color=green)](https://www.npmjs.com/package/@theluckystrike/webext-reactive-store)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
+[![Last Commit](https://img.shields.io/github/last-commit/theluckystrike/webext-reactive-store)](https://github.com/theluckystrike/webext-reactive-store/commits/main)
 
-> A reactive state management library for Chrome extensions using the observer pattern with chrome.storage sync.
+A reactive state store for Chrome extensions — featuring subscriptions, cross-context sync, computed properties, and middleware, all built for Manifest V3.
 
 ## Overview
 
-**webext-reactive-store** is a reactive state management library for Chrome extensions. It uses the observer pattern with chrome.storage sync to automatically keep state synchronized across all extension contexts (popup, background, content scripts).
+`webext-reactive-store` provides a simple yet powerful way to manage reactive state across your Chrome extension's different contexts (popup, background script, content scripts). It bridges the gap between isolated contexts with automatic synchronization and persistent storage.
 
-Part of the [Zovo](https://zovo.one) developer tools family.
+### Key Features
 
-## Features
-
-- ✅ **Reactive Updates** - Subscribe to state changes
-- ✅ **Automatic Sync** - Sync across extension contexts
-- ✅ **Immutable Updates** - Safe state mutations
-- ✅ **TypeScript** - Full type support
-- ✅ **Middleware** - Extend with custom logic
-- ✅ **Persistence** - Automatic chrome.storage sync
+- **Reactive State** — Subscribe to state changes with an intuitive observer pattern
+- **Cross-Context Sync** — Automatically sync state between popup, background, and content scripts
+- **Computed Properties** — Derive values from state that automatically update
+- **Middleware** — Transform or validate state updates with middleware functions
+- **Persistence** — Save and load state from `chrome.storage.local`
+- **TypeScript First** — Full type safety out of the box
 
 ## Installation
 
 ```bash
-npm install webext-reactive-store
+npm install @theluckystrike/webext-reactive-store
+```
+
+Or using yarn:
+
+```bash
+yarn add @theluckystrike/webext-reactive-store
 ```
 
 ## Quick Start
 
-### Create a Store
+```typescript
+import { ReactiveStore } from '@theluckystrike/webext-reactive-store';
 
-```javascript
-import { createStore } from 'webext-reactive-store';
+interface AppState {
+  count: number;
+  theme: 'light' | 'dark';
+  user: string | null;
+}
 
-const store = createStore({
-  initialState: {
-    user: null,
-    settings: {
-      theme: 'dark',
-      notifications: true
-    },
-    items: []
-  }
+const store = new ReactiveStore<AppState>({
+  count: 0,
+  theme: 'light',
+  user: null,
 });
+
+// Subscribe to a specific key
+const unsubscribe = store.subscribe('count', (value, prev) => {
+  console.log(`Count changed from ${prev} to ${value}`);
+});
+
+// Update state
+store.set('count', 1);
+store.update({ theme: 'dark', user: 'Alice' });
+
+// Read state
+store.get('theme');     // "dark"
+store.getState();       // { count: 1, theme: "dark", user: "Alice" }
+
+unsubscribe();
 ```
 
-### Subscribe to Changes
+## Cross-Context Usage
 
-```javascript
-// Subscribe to entire state
-store.subscribe((state) => {
-  console.log('State changed:', state);
+One of the most powerful features is synchronizing state across your extension's different contexts.
+
+### Background Script (Central Store)
+
+```typescript
+// background.ts
+import { ReactiveStore } from '@theluckystrike/webext-reactive-store';
+
+interface AppState {
+  isAuthenticated: boolean;
+  user: { id: string; name: string } | null;
+  settings: { notifications: boolean; theme: string };
+}
+
+const store = new ReactiveStore<AppState>({
+  isAuthenticated: false,
+  user: null,
+  settings: { notifications: true, theme: 'light' },
 });
 
-// Subscribe to specific slice
-store.subscribe('user', (user) => {
-  console.log('User changed:', user);
-});
+// Enable cross-context sync
+store.enableSync('my-extension-sync');
 
-store.subscribe('settings.theme', (theme) => {
-  console.log('Theme changed to:', theme);
-});
+// Load persisted state on startup
+store.load();
+
+// Save state when it changes
+store.onAny(() => store.save());
 ```
 
-### Update State
+### Popup Script
 
-```javascript
-// Update entire state
-store.setState({ user: { name: 'John' } });
+```typescript
+// popup.ts
+import { ReactiveStore } from '@theluckystrike/webext-reactive-store';
 
-// Update with updater function
-store.setState((state) => ({
-  ...state,
-  user: { ...state.user, name: 'Jane' }
-}));
+interface AppState {
+  isAuthenticated: boolean;
+  user: { id: string; name: string } | null;
+  settings: { notifications: boolean; theme: string };
+}
 
-// Nested updates
-store.setState('settings.theme', 'light');
-
-store.setState('items', (items) => [...items, newItem]);
-```
-
-### Use in Background
-
-```javascript
-// background.js
-import { createStore } from 'webext-reactive-store';
-
-const store = createStore({ initialState: { count: 0 } });
-
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'INCREMENT') {
-    store.setState('count', (c) => c + 1);
-  }
+const store = new ReactiveStore<AppState>({
+  isAuthenticated: false,
+  user: null,
+  settings: { notifications: true, theme: 'light' },
 });
-```
 
-### Use in Content Script
-
-```javascript
-// content-script.js
-import { createStore } from 'webext-reactive-store';
-
-const store = createStore({ 
-  initialState: { count: 0 },
-  storage: 'sync' // or 'local'
-});
+// Connect to the same sync channel
+store.enableSync('my-extension-sync');
 
 // React to background changes
-store.subscribe('count', (count) => {
-  document.getElementById('counter').textContent = count;
+store.subscribe('isAuthenticated', (value) => {
+  if (value) {
+    console.log('User logged in!');
+  }
+});
+
+// Load initial state
+store.load();
+
+// Update state (automatically syncs to background)
+store.set('settings', { ...store.get('settings'), theme: 'dark' });
+```
+
+### Content Script
+
+```typescript
+// content.ts
+import { ReactiveStore } from '@theluckystrike/webext-reactive-store';
+
+interface AppState {
+  theme: 'light' | 'dark';
+}
+
+const store = new ReactiveStore<AppState>({
+  theme: 'light',
+});
+
+// Listen for theme changes from popup/background
+store.enableSync('my-extension-sync');
+
+store.subscribe('theme', (theme) => {
+  document.documentElement.setAttribute('data-theme', theme);
 });
 ```
 
-## API
+## API Reference
 
-### createStore(options)
+### Constructor
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| initialState | object | {} | Initial state object |
-| storage | string | 'local' | Storage area ('local' or 'sync') |
-| middleware | array | [] | Middleware functions |
+```typescript
+new ReactiveStore<T>(initial: T)
+```
 
-### store Methods
+Creates a new store with the given initial state.
+
+### State Access
 
 | Method | Description |
 |--------|-------------|
-| `getState()` | Get current state |
-| `setState(updater)` | Update state |
-| `subscribe(listener)` | Subscribe to all changes |
-| `subscribe(path, listener)` | Subscribe to path changes |
-| `unsubscribe(listener)` | Unsubscribe from changes |
-| `reset()` | Reset to initial state |
+| `getState(): Readonly<T>` | Returns a shallow copy of the entire state |
+| `get<K extends keyof T>(key: K): T[K]` | Returns the value for a single key |
+
+### State Mutation
+
+| Method | Description |
+|--------|-------------|
+| `set<K extends keyof T>(key: K, value: T[K]): void` | Sets a single key. Runs middleware, then notifies subscribers |
+| `update(partial: Partial<T>): void` | Sets multiple keys atomically |
+
+### Subscriptions
+
+| Method | Description |
+|--------|-------------|
+| `subscribe<K extends keyof T>(key: K, callback: (value: T[K], prev: T[K]) => void): () => void` | Subscribe to changes on a specific key. Returns unsubscribe function |
+| `onAny(callback: (state: T, change: { key: string; value: any; prev: any }) => void): () => void` | Subscribe to all state changes. Returns unsubscribe function |
 
 ### Middleware
 
-```javascript
-const loggerMiddleware = (store) => (next) => (action) => {
-  console.log('Before:', store.getState());
-  next(action);
-  console.log('After:', store.getState());
-};
-
-const store = createStore({
-  initialState: { ... },
-  middleware: [loggerMiddleware]
+```typescript
+store.use((key, value, prev) => {
+  // Transform the value
+  if (key === 'count') {
+    return value * 2;
+  }
+  return value;
 });
 ```
 
-## TypeScript
+Middleware runs before each state update. Return a value to transform the update.
+
+### Computed Properties
 
 ```typescript
-interface AppState {
-  user: User | null;
-  settings: Settings;
-  items: Item[];
-}
+store.defineComputed('isLoggedIn', (state) => state.user !== null);
+store.defineComputed('themeClass', (state) => `theme-${state.theme}`);
 
-const store = createStore<AppState>({
-  initialState: {
-    user: null,
-    settings: { theme: 'dark' },
-    items: []
-  }
-});
-
-// Fully typed subscriptions
-store.subscribe('user', (user) => {
-  // user is typed as User | null
-});
+store.getComputed('isLoggedIn'); // boolean
 ```
 
-## Chrome Storage Sync
+Computed properties are derived values that update automatically when their dependencies change.
 
-For syncing across devices:
+### Persistence
 
-```javascript
-const store = createStore({
-  initialState: { theme: 'dark' },
-  storage: 'sync' // Uses chrome.storage.sync
-});
+```typescript
+// Save state to chrome.storage.local
+await store.save('my-store-key');
 
-// Changes automatically sync across devices
-store.setState('theme', 'light');
+// Load state from chrome.storage.local
+await store.load('my-store-key');
 ```
 
-## Browser Support
+### Cross-Context Sync
 
-- Chrome 88+
-- Edge 88+
-- Chromium-based browsers
+```typescript
+store.enableSync('my-channel'); // Default channel: "__store_sync__"
+```
 
-## Contributing
+Enables state synchronization between all extension contexts using `chrome.runtime` messaging.
 
-Contributions are welcome! Please follow these steps:
+## Project Structure
 
-1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feature/store-improvement`
-3. **Make** your changes
-4. **Test** your changes: `npm test`
-5. **Commit** your changes: `git commit -m 'Add new feature'`
-6. **Push** to the branch: `git push origin feature/store-improvement`
-7. **Submit** a Pull Request
-
-## Built by Zovo
-
-Part of the [Zovo](https://zovo.one) developer tools family — privacy-first Chrome extensions built by developers, for developers.
-
-## See Also
-
-### Related Zovo Repositories
-
-- [webext-bridge](https://github.com/theluckystrike/webext-bridge) - Cross-context messaging
-- [webext-options-page](https://github.com/theluckystrike/webext-options-page) - Pre-built options page
-- [chrome-storage-plus](https://github.com/theluckystrike/chrome-storage-plus) - Type-safe storage wrapper
-- [chrome-extension-starter-mv3](https://github.com/theluckystrike/chrome-extension-starter-mv3) - Extension template
-- [zovo-extension-template](https://github.com/theluckystrike/zovo-extension-template) - Privacy-first extension template
-
-### Zovo Chrome Extensions
-
-- [Zovo Tab Manager](https://chrome.google.com/webstore/detail/zovo-tab-manager) - Manage tabs efficiently
-- [Zovo Focus](https://chrome.google.com/webstore/detail/zovo-focus) - Block distractions
-- [Zovo Permissions Scanner](https://chrome.google.com/webstore/detail/zovo-permissions-scanner) - Check extension privacy grades
-
-Visit [zovo.one](https://zovo.one) for more information.
+```
+webext-reactive-store/
+├── src/
+│   ├── index.ts          # Main exports
+│   ├── store.ts          # ReactiveStore implementation
+│   └── store.test.ts     # Unit tests
+├── package.json
+├── tsconfig.json
+├── LICENSE
+└── README.md
+```
 
 ## License
 
-MIT — [Zovo](https://zovo.one)
+MIT — see [LICENSE](LICENSE) for details.
 
 ---
 
-*Built by developers, for developers. No compromises on privacy.*
+Built at [zovo.one](https://zovo.one) by [theluckystrike](https://github.com/theluckystrike)
